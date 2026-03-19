@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}{{ person.first_name }} {{ person.last_name }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('people') }}">People</a></li>
+    <li class="breadcrumb-item active">{{ person.first_name }} {{ person.last_name }}</li>
+  </ol>
+</nav>
+
+{% set secondary_emails = emails | selectattr('is_primary', 'equalto', 0) | list %}
+
+<div class="row">
+  <div class="col-md-5">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Profile</strong>
+        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#editForm">Edit</button>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Name</dt>
+          <dd class="col-sm-8">{{ person.first_name }} {{ person.last_name }}</dd>
+          <dt class="col-sm-4">Email</dt>
+          <dd class="col-sm-8">{{ person.primary_email }}</dd>
+          {% if secondary_emails %}
+          <dt class="col-sm-4">Other emails</dt>
+          <dd class="col-sm-8">
+            {% for e in secondary_emails %}
+            <div>{{ e.email }}</div>
+            {% endfor %}
+          </dd>
+          {% endif %}
+          <dt class="col-sm-4">Phone</dt>
+          <dd class="col-sm-8">{{ person.primary_phone or '—' }}</dd>
+          <dt class="col-sm-4">Organization</dt>
+          <dd class="col-sm-8">{{ person.organization or '—' }}</dd>
+          <dt class="col-sm-4">City</dt>
+          <dd class="col-sm-8">{{ person.city or '—' }}</dd>
+          <dt class="col-sm-4">Country</dt>
+          <dd class="col-sm-8">{{ person.country or '—' }}</dd>
+          <dt class="col-sm-4">Social</dt>
+          <dd class="col-sm-8">{% if person.social_media %}<a href="{{ person.social_media }}" target="_blank">{{ person.social_media }}</a>{% else %}—{% endif %}</dd>
+          <dt class="col-sm-4">Notes</dt>
+          <dd class="col-sm-8">{{ person.notes or '—' }}</dd>
+        </dl>
+      </div>
+
+      <div class="collapse" id="editForm">
+        <div class="card-footer">
+          <form method="post">
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label">First Name</label>
+                <input type="text" name="first_name" class="form-control form-control-sm" value="{{ person.first_name or '' }}">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Last Name</label>
+                <input type="text" name="last_name" class="form-control form-control-sm" value="{{ person.last_name or '' }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Primary Email <span class="text-muted small">(read-only)</span></label>
+                <input type="text" class="form-control form-control-sm bg-light" value="{{ person.primary_email }}" disabled>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Secondary Emails</label>
+                <div id="secEmailList">
+                  {% for e in secondary_emails %}
+                  <div class="input-group input-group-sm mb-1 sec-email-row">
+                    <input type="text" name="sec_email" class="form-control form-control-sm" value="{{ e.email }}">
+                    <button type="button" class="btn btn-outline-danger btn-sm remove-sec-email" title="Remove">×</button>
+                  </div>
+                  {% endfor %}
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm mt-1" id="addSecEmail">+ Add email</button>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Phone</label>
+                <input type="text" name="phone" class="form-control form-control-sm" value="{{ person.primary_phone or '' }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Organization</label>
+                <input type="text" name="organization" class="form-control form-control-sm" value="{{ person.organization or '' }}">
+              </div>
+              <div class="col-6">
+                <label class="form-label">City</label>
+                <input type="text" name="city" class="form-control form-control-sm" value="{{ person.city or '' }}">
+              </div>
+              <div class="col-6">
+                <label class="form-label">Country</label>
+                <input type="text" name="country" class="form-control form-control-sm" value="{{ person.country or '' }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Social Media</label>
+                <input type="text" name="social_media" class="form-control form-control-sm" value="{{ person.social_media or '' }}">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Notes</label>
+                <textarea name="notes" class="form-control form-control-sm" rows="2">{{ person.notes or '' }}</textarea>
+              </div>
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <h5>Enrollments ({{ enrollments|length }})</h5>
+    <div class="table-responsive">
+    <table class="table table-sm table-hover">
+      <thead class="table-secondary">
+        <tr>
+          <th>Course</th>
+          <th>Dates</th>
+          <th>Type</th>
+          <th>Attended</th>
+          <th>Waiver</th>
+          <th>Cert</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in enrollments %}
+        <tr>
+          <td><a href="{{ url_for('course', cid=e.course_id) }}">{{ e.course_name }}</a></td>
+          <td class="text-nowrap">
+            {{ e.start_date or '?' }}
+            {% if e.end_date and e.end_date != e.start_date %}→ {{ e.end_date }}{% endif %}
+          </td>
+          <td><span class="badge bg-{{ 'info' if e.batch_type == 'public' else 'secondary' }}">{{ e.batch_type }}</span></td>
+          <td>{% if e.attended %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-light text-dark">No</span>{% endif %}</td>
+          <td>{{ e.fee_waiver or '—' }}</td>
+          <td>{{ e.certificate_id or '—' }}</td>
+          <td><a href="{{ url_for('enrollment', eid=e.id) }}" class="btn btn-xs btn-outline-secondary btn-sm py-0 px-1">Edit</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-muted text-center">No enrollments.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </div>
+</div>
+
+<script>
+document.getElementById('addSecEmail').addEventListener('click', () => {
+  const row = document.createElement('div');
+  row.className = 'input-group input-group-sm mb-1 sec-email-row';
+  row.innerHTML = '<input type="text" name="sec_email" class="form-control form-control-sm" placeholder="email@example.com">'
+                + '<button type="button" class="btn btn-outline-danger btn-sm remove-sec-email" title="Remove">×</button>';
+  document.getElementById('secEmailList').appendChild(row);
+  row.querySelector('input').focus();
+});
+
+document.getElementById('secEmailList').addEventListener('click', e => {
+  if (e.target.classList.contains('remove-sec-email')) {
+    e.target.closest('.sec-email-row').remove();
+  }
+});
+</script>
+{% endblock %}

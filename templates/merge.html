@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Merge People{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('people') }}">People</a></li>
+    <li class="breadcrumb-item active">Merge</li>
+  </ol>
+</nav>
+
+<h3 class="mb-1">Merge Records</h3>
+<p class="text-muted mb-4">Choose which record to <strong>keep</strong>. The other will have its enrollments, certifications, and emails absorbed into the kept record, then be deleted.</p>
+
+<form method="post" action="{{ url_for('merge_confirm') }}">
+<div class="row g-3 mb-4">
+  {% for p in persons %}
+  <div class="col-md-6">
+    <div class="card h-100" id="card-{{ p.person.id }}">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Person {{ loop.index }}</span>
+        <div class="form-check mb-0">
+          <input class="form-check-input keep-radio" type="radio" name="keep_id" value="{{ p.person.id }}"
+                 id="keep{{ p.person.id }}" {% if loop.first %}checked{% endif %} required>
+          <label class="form-check-label fw-semibold" for="keep{{ p.person.id }}">Keep this record</label>
+        </div>
+      </div>
+      <div class="card-body">
+        <dl class="row small mb-2">
+          <dt class="col-5">Name</dt>
+          <dd class="col-7">{{ p.person.first_name }} {{ p.person.last_name }}</dd>
+          <dt class="col-5">Email</dt>
+          <dd class="col-7">{{ p.person.primary_email }}</dd>
+          <dt class="col-5">Phone</dt>
+          <dd class="col-7">{{ p.person.primary_phone or '—' }}</dd>
+          <dt class="col-5">Organization</dt>
+          <dd class="col-7">{{ p.person.organization or '—' }}</dd>
+          <dt class="col-5">City</dt>
+          <dd class="col-7">{{ p.person.city or '—' }}</dd>
+          <dt class="col-5">Country</dt>
+          <dd class="col-7">{{ p.person.country or '—' }}</dd>
+          <dt class="col-5">Social</dt>
+          <dd class="col-7">{% if p.person.social_media %}<a href="{{ p.person.social_media }}" target="_blank">link</a>{% else %}—{% endif %}</dd>
+        </dl>
+
+        {% if p.emails %}
+        <p class="small text-muted mb-1">Emails:</p>
+        <ul class="small mb-2">
+          {% for e in p.emails %}<li>{{ e.email }}{% if e.is_primary %} <span class="badge bg-secondary" style="font-size:.65rem">primary</span>{% endif %}</li>{% endfor %}
+        </ul>
+        {% endif %}
+
+        <p class="small text-muted mb-1">Enrollments ({{ p.enrollments|length }}):</p>
+        {% if p.enrollments %}
+        <ul class="small mb-0">
+          {% for e in p.enrollments %}
+          <li>
+            {{ e.course_name }}
+            <span class="text-muted">({{ e.start_date }})</span>
+            {% if e.certificate_id %}<span class="badge bg-success" style="font-size:.65rem">{{ e.certificate_id }}</span>{% endif %}
+            {% if e.fee_waiver %}<span class="badge bg-warning text-dark" style="font-size:.65rem">{{ e.fee_waiver }}</span>{% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="small text-muted mb-0">None</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% for p in persons %}
+<input type="hidden" name="all_ids" value="{{ p.person.id }}">
+{% endfor %}
+
+<div class="d-flex gap-2">
+  <button type="submit" class="btn btn-danger">Confirm merge</button>
+  <a href="{{ url_for('people') }}" class="btn btn-outline-secondary">Cancel</a>
+</div>
+</form>
+
+<script>
+document.querySelectorAll('.keep-radio').forEach(radio => {
+  radio.addEventListener('change', () => {
+    document.querySelectorAll('.card[id^="card-"]').forEach(c => c.classList.remove('border-success', 'border-2'));
+    const chosen = document.querySelector('.keep-radio:checked');
+    if (chosen) document.getElementById('card-' + chosen.value).classList.add('border-success', 'border-2');
+  });
+});
+// Highlight initial selection
+const initial = document.querySelector('.keep-radio:checked');
+if (initial) document.getElementById('card-' + initial.value).classList.add('border-success', 'border-2');
+</script>
+{% endblock %}

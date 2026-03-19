@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ course.name }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('courses') }}">Courses</a></li>
+    <li class="breadcrumb-item active">{{ course.name }}</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <h2>{{ course.name }}</h2>
+  <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#editCourse">Edit</button>
+</div>
+
+{% if course.description %}
+<p class="text-muted">{{ course.description }}</p>
+{% endif %}
+
+<div class="collapse mb-4" id="editCourse">
+  <div class="card card-body">
+    <form method="post">
+      <div class="mb-2">
+        <label class="form-label">Course Name</label>
+        <input type="text" name="name" class="form-control" value="{{ course.name }}">
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control" rows="2">{{ course.description or '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Save</button>
+    </form>
+  </div>
+</div>
+
+<h5>Batches ({{ batches|length }})</h5>
+<div class="table-responsive">
+<table class="table table-hover table-sm">
+  <thead class="table-secondary">
+    <tr>
+      <th>Type</th>
+      <th>Start Date</th>
+      <th>End Date</th>
+      <th class="text-center">Enrollments</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for b in batches %}
+    <tr>
+      <td>
+        <a href="{{ url_for('batch', bid=b.id) }}">
+          <span class="badge bg-{{ 'info' if b.batch_type == 'public' else 'secondary' }}">{{ b.batch_type }}</span>
+        </a>
+      </td>
+      <td>{{ b.start_date or '?' }}</td>
+      <td>{{ b.end_date or '?' }}</td>
+      <td class="text-center"><a href="{{ url_for('batch', bid=b.id) }}">{{ b.enrollment_count }}</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="text-muted text-center">No batches.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}People{% endblock %}
+{% block content %}
+<h2 class="mb-3">People</h2>
+
+<form method="get" class="row g-2 mb-4" id="filterForm">
+  <div class="col-md-3">
+    <input type="text" name="q" class="form-control" placeholder="Name or email" value="{{ q }}">
+  </div>
+  <div class="col-md-3">
+    <select name="course" class="form-select">
+      <option value="">All courses</option>
+      {% for c in courses %}
+      <option value="{{ c.id }}" {% if course == c.id|string %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select name="batch_type" class="form-select">
+      <option value="any" {% if batch_type == 'any' %}selected{% endif %}>Any type</option>
+      <option value="public" {% if batch_type == 'public' %}selected{% endif %}>Public</option>
+      <option value="private" {% if batch_type == 'private' %}selected{% endif %}>Private</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select name="waiver" class="form-select">
+      <option value="any" {% if waiver == 'any' %}selected{% endif %}>Any waiver</option>
+      <option value="scholarship" {% if waiver == 'scholarship' %}selected{% endif %}>Scholarship</option>
+      <option value="discount" {% if waiver == 'discount' %}selected{% endif %}>Discount</option>
+      <option value="none" {% if waiver == 'none' %}selected{% endif %}>No waiver</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <select name="has_cert" class="form-select">
+      <option value="any" {% if has_cert == 'any' %}selected{% endif %}>Cert: any</option>
+      <option value="yes" {% if has_cert == 'yes' %}selected{% endif %}>Has cert</option>
+      <option value="no" {% if has_cert == 'no' %}selected{% endif %}>No cert</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <input type="text" name="country" class="form-control" placeholder="Country" value="{{ country }}">
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-primary">Filter</button>
+    <a href="{{ url_for('people') }}" class="btn btn-outline-secondary">Reset</a>
+  </div>
+</form>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <p class="text-muted mb-0">{{ people|length }} result(s)</p>
+  <form method="post" action="{{ url_for('merge_preview') }}" id="mergeForm">
+    <span id="mergeHint" class="text-muted small me-2">Select exactly 2 people to merge</span>
+    <button type="submit" class="btn btn-sm btn-outline-danger" id="mergeBtn" disabled>Merge selected</button>
+  </form>
+</div>
+
+<div class="table-responsive">
+<table class="table table-hover table-sm">
+  <thead class="table-dark">
+    <tr>
+      <th style="width:2rem"><input type="checkbox" id="selectAll" title="Select all"></th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Organization</th>
+      <th>City</th>
+      <th>Country</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in people %}
+    <tr>
+      <td><input type="checkbox" class="row-check" form="mergeForm" name="ids" value="{{ p.id }}"></td>
+      <td><a href="{{ url_for('person', pid=p.id) }}">{{ p.first_name }} {{ p.last_name }}</a></td>
+      <td>{{ p.primary_email }}</td>
+      <td>{{ p.organization or '' }}</td>
+      <td>{{ p.city or '' }}</td>
+      <td>{{ p.country or '' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6" class="text-center text-muted">No results.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<script>
+const checks = () => document.querySelectorAll('.row-check:checked');
+const btn = document.getElementById('mergeBtn');
+const hint = document.getElementById('mergeHint');
+
+function updateMerge() {
+  const n = checks().length;
+  btn.disabled = n !== 2;
+  hint.textContent = n === 2 ? '2 selected — ready to merge'
+                   : n > 2  ? `${n} selected — select exactly 2`
+                   :          'Select exactly 2 people to merge';
+}
+
+document.querySelectorAll('.row-check').forEach(c => c.addEventListener('change', updateMerge));
+
+document.getElementById('selectAll').addEventListener('change', function() {
+  document.querySelectorAll('.row-check').forEach(c => c.checked = this.checked);
+  updateMerge();
+});
+</script>
+{% endblock %}

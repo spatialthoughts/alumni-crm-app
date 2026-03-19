@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Batch — {{ batch.course_name }}{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('courses') }}">Courses</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('course', cid=batch.course_id) }}">{{ batch.course_name }}</a></li>
+    <li class="breadcrumb-item active">{{ batch.batch_type|capitalize }} batch</li>
+  </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h2>{{ batch.course_name }}</h2>
+    <p class="text-muted mb-0">
+      <span class="badge bg-{{ 'info' if batch.batch_type == 'public' else 'secondary' }}">{{ batch.batch_type }}</span>
+      {{ batch.start_date or '?' }} → {{ batch.end_date or '?' }}
+    </p>
+  </div>
+  <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#editBatch">Edit</button>
+</div>
+
+<div class="collapse mb-4" id="editBatch">
+  <div class="card card-body">
+    <form method="post">
+      <div class="row g-2">
+        <div class="col-md-4">
+          <label class="form-label">Start Date</label>
+          <input type="date" name="start_date" class="form-control" value="{{ batch.start_date or '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">End Date</label>
+          <input type="date" name="end_date" class="form-control" value="{{ batch.end_date or '' }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label">Notes</label>
+          <textarea name="notes" class="form-control" rows="2">{{ batch.notes or '' }}</textarea>
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary btn-sm">Save</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<h5>Enrollments ({{ enrollments|length }})</h5>
+<div class="table-responsive">
+<table class="table table-hover table-sm">
+  <thead class="table-secondary">
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Organization</th>
+      <th>Attended</th>
+      <th>Waiver</th>
+      <th>Cert ID</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for e in enrollments %}
+    <tr>
+      <td><a href="{{ url_for('person', pid=e.person_id) }}">{{ e.first_name }} {{ e.last_name }}</a></td>
+      <td>{{ e.primary_email }}</td>
+      <td>{{ e.organization or '—' }}</td>
+      <td>{% if e.attended %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-light text-dark">No</span>{% endif %}</td>
+      <td>{{ e.fee_waiver or '—' }}</td>
+      <td>{{ e.certificate_id or '—' }}</td>
+      <td><a href="{{ url_for('enrollment', eid=e.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-1">Edit</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="text-muted text-center">No enrollments.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

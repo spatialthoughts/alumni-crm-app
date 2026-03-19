@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Courses{% endblock %}
+{% block content %}
+<h2 class="mb-3">Courses</h2>
+<p class="text-muted">{{ courses|length }} courses</p>
+<div class="table-responsive">
+<table class="table table-hover">
+  <thead class="table-dark">
+    <tr>
+      <th>Course Name</th>
+      <th class="text-center">Batches</th>
+      <th class="text-center">Enrollments</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in courses %}
+    <tr>
+      <td><a href="{{ url_for('course', cid=c.id) }}">{{ c.name }}</a></td>
+      <td class="text-center">{{ c.batch_count }}</td>
+      <td class="text-center">{{ c.enrollment_count }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3" class="text-center text-muted">No courses.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

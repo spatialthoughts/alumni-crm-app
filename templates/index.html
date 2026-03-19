@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h2 class="mb-4">Dashboard</h2>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card">
+      <div class="stat-value stat-navy">{{ stats.people }}</div>
+      <div class="stat-label">People</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card">
+      <div class="stat-value stat-green">{{ stats.courses }}</div>
+      <div class="stat-label">Courses</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card">
+      <div class="stat-value stat-sky">{{ stats.batches }}</div>
+      <div class="stat-label">Batches</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card">
+      <div class="stat-value stat-navy">{{ stats.enrollments }}</div>
+      <div class="stat-label">Enrollments</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card">
+      <div class="stat-value stat-lime">{{ stats.scholarships }}</div>
+      <div class="stat-label">Fee Waivers</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="stat-card">
+      <div class="stat-value stat-green">{{ stats.certs }}</div>
+      <div class="stat-label">Certificates</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-header">Quick Links</div>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item"><a href="{{ url_for('people') }}">Browse all people</a></li>
+        <li class="list-group-item"><a href="{{ url_for('courses') }}">Browse all courses</a></li>
+        <li class="list-group-item"><a href="{{ url_for('query') }}?preset=scholarship_cert">Scholarship + Certificate holders</a></li>
+        <li class="list-group-item"><a href="{{ url_for('query') }}?preset=no_cert">Missing certificates</a></li>
+        <li class="list-group-item"><a href="{{ url_for('query') }}?preset=multi_course">Multi-course alumni</a></li>
+        <li class="list-group-item"><a href="{{ url_for('upload') }}">Upload new CSV batch</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-9">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Enrollments by Country</span>
+        <span id="mapStatus" class="text-muted small"></span>
+      </div>
+      <div class="card-body p-0">
+        <div id="map" style="height:320px; border-radius:0 0 8px 8px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const BREAKS = [1, 5, 15, 40, 100, 250];
+const COLORS  = ['#eff3ff','#bdd7e7','#6baed6','#3182bd','#08519c','#08306b'];
+
+function getColor(n) {
+  if (!n) return '#e8ecf0';
+  for (let i = BREAKS.length - 1; i >= 0; i--) {
+    if (n >= BREAKS[i]) return COLORS[i];
+  }
+  return COLORS[0];
+}
+
+function style(feature, counts) {
+  const n = counts[feature.properties.NAME_EN] || 0;
+  return {
+    fillColor: getColor(n),
+    fillOpacity: n ? 0.85 : 0.25,
+    color: '#fff',
+    weight: 0.5,
+  };
+}
+
+const map = L.map('map', { zoomControl: true }).setView([20, 10], 2);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+  subdomains: 'abcd', maxZoom: 19
+}).addTo(map);
+
+Promise.all([
+  fetch("{{ url_for('static', filename='world.json') }}").then(r => r.json()),
+  fetch("{{ url_for('api_enrollments_by_country') }}").then(r => r.json())
+]).then(([geo, counts]) => {
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  document.getElementById('mapStatus').textContent =
+    Object.keys(counts).length + ' countries · ' + total + ' enrollments mapped';
+
+  let geojsonLayer;
+  const info = L.control();
+  info.onAdd = () => { info._div = L.DomUtil.create('div','map-info'); info.update(); return info._div; };
+  info.update = function(props, n) {
+    this._div.innerHTML = props
+      ? '<strong>' + props.NAME_EN + '</strong><br>' + (n || 0) + ' enrollment' + ((n !== 1) ? 's' : '')
+      : 'Hover over a country';
+  };
+  info.addTo(map);
+
+  geojsonLayer = L.geoJson(geo, {
+    style: f => style(f, counts),
+    onEachFeature(feature, layer) {
+      const n = counts[feature.properties.NAME_EN] || 0;
+      layer.on({
+        mouseover(e) {
+          e.target.setStyle({ weight: 2, color: '#2D4DA5', fillOpacity: 0.95 });
+          e.target.bringToFront();
+          info.update(feature.properties, n);
+        },
+        mouseout(e) {
+          geojsonLayer.resetStyle(e.target);
+          info.update();
+        },
+        click(e) {
+          map.fitBounds(e.target.getBounds());
+        }
+      });
+    }
+  }).addTo(map);
+
+  // Legend
+  const legend = L.control({ position: 'bottomright' });
+  legend.onAdd = () => {
+    const div = L.DomUtil.create('div', 'map-legend');
+    div.innerHTML = '<strong>Enrollments</strong><br>';
+    div.innerHTML += `<i style="background:#e8ecf0"></i> 0<br>`;
+    const labels = ['1–4','5–14','15–39','40–99','100–249','250+'];
+    COLORS.forEach((c, i) => {
+      div.innerHTML += `<i style="background:${c}"></i> ${labels[i]}<br>`;
+    });
+    return div;
+  };
+  legend.addTo(map);
+});
+</script>
+
+<style>
+.map-info {
+  padding: 8px 12px;
+  background: rgba(255,255,255,.92);
+  border-radius: 6px;
+  box-shadow: 0 1px 5px rgba(0,0,0,.2);
+  font-size: .85rem;
+  min-width: 160px;
+}
+.map-legend {
+  padding: 8px 12px;
+  background: rgba(255,255,255,.92);
+  border-radius: 6px;
+  box-shadow: 0 1px 5px rgba(0,0,0,.2);
+  font-size: .8rem;
+  line-height: 1.7;
+}
+.map-legend i {
+  display: inline-block;
+  width: 14px; height: 14px;
+  margin-right: 6px;
+  border-radius: 2px;
+  vertical-align: middle;
+  border: 1px solid #ccc;
+}
+</style>
+{% endblock %}

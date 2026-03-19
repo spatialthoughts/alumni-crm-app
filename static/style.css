@@ -1,0 +1,202 @@
+/* ── Brand palette ──────────────────────────────────────────────────────── */
+:root {
+  --st-green:  #43AC48;
+  --st-lime:   #95C11F;
+  --st-sky:    #29ABE2;
+  --st-navy:   #2D4DA5;
+  --st-dark:   #1a3070;
+  --st-light:  #f4f8ff;
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
+body {
+  background-color: var(--st-light);
+  color: #222;
+}
+
+a {
+  color: var(--st-navy);
+}
+a:hover {
+  color: var(--st-sky);
+}
+
+/* ── Navbar ─────────────────────────────────────────────────────────────── */
+.navbar {
+  background-color: #fff !important;
+  border-bottom: 3px solid var(--st-green);
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+
+.navbar-logo {
+  height: 42px;
+  width: auto;
+  margin-right: 0.6rem;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+  padding: 0;
+}
+
+.brand-spatial {
+  color: var(--st-green);
+  font-weight: 700;
+}
+
+.brand-thoughts {
+  color: var(--st-sky);
+  font-weight: 700;
+}
+
+.brand-sub {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--st-dark);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.navbar .nav-link {
+  color: var(--st-dark) !important;
+  font-weight: 500;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.85rem !important;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+  color: #fff !important;
+  background-color: var(--st-green);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background-color: var(--st-green);
+  border-color: var(--st-green);
+  color: #fff;
+}
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #37923c;
+  border-color: #37923c;
+}
+
+.btn-outline-primary {
+  color: var(--st-green);
+  border-color: var(--st-green);
+}
+.btn-outline-primary:hover {
+  background-color: var(--st-green);
+  border-color: var(--st-green);
+}
+
+.btn-outline-secondary:hover {
+  background-color: var(--st-navy);
+  border-color: var(--st-navy);
+  color: #fff;
+}
+
+.btn-outline-success {
+  color: var(--st-lime);
+  border-color: var(--st-lime);
+}
+.btn-outline-success:hover {
+  background-color: var(--st-lime);
+  border-color: var(--st-lime);
+  color: #fff;
+}
+
+/* ── Dashboard stat cards ───────────────────────────────────────────────── */
+.stat-card {
+  background: #fff;
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,.07);
+  padding: 1.25rem 1rem;
+  text-align: center;
+}
+.stat-card .stat-value {
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.stat-card .stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #777;
+  margin-top: 0.3rem;
+}
+.stat-green  { color: var(--st-green); }
+.stat-lime   { color: var(--st-lime); }
+.stat-sky    { color: var(--st-sky); }
+.stat-navy   { color: var(--st-navy); }
+
+/* ── Tables ─────────────────────────────────────────────────────────────── */
+.table td, .table th {
+  vertical-align: middle;
+}
+.table-dark {
+  background-color: var(--st-dark) !important;
+}
+thead.table-dark th {
+  background-color: var(--st-dark);
+  color: #fff;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+thead.table-secondary th {
+  background-color: #e8edf8;
+  color: var(--st-dark);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Badges ─────────────────────────────────────────────────────────────── */
+.badge.bg-info    { background-color: var(--st-sky)   !important; }
+.badge.bg-success { background-color: var(--st-green) !important; }
+.badge.bg-primary { background-color: var(--st-navy)  !important; }
+
+/* ── Cards ──────────────────────────────────────────────────────────────── */
+.card {
+  border: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  border-radius: 8px;
+}
+.card-header {
+  background-color: #eef2fb;
+  font-weight: 600;
+  color: var(--st-dark);
+  border-bottom: 1px solid #dde3f5;
+}
+
+/* ── Breadcrumbs ────────────────────────────────────────────────────────── */
+.breadcrumb-item a {
+  color: var(--st-sky);
+  text-decoration: none;
+}
+
+/* ── Page headings ──────────────────────────────────────────────────────── */
+h2, h3, h5 {
+  color: var(--st-dark);
+}
+
+/* ── Quick-links list ───────────────────────────────────────────────────── */
+.list-group-item a {
+  color: var(--st-navy);
+  text-decoration: none;
+}
+.list-group-item a:hover {
+  color: var(--st-green);
+}

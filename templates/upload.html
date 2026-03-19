@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Upload CSV{% endblock %}
+{% block content %}
+<h2 class="mb-3">Upload CSV Batch</h2>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+{% if result %}
+<div class="alert alert-success">
+  <h5>Upload complete</h5>
+  <ul class="mb-0">
+    <li><strong>{{ result.new_people }}</strong> new people added</li>
+    <li><strong>{{ result.new_enrollments }}</strong> new enrollments added</li>
+    <li><strong>{{ result.skipped }}</strong> rows skipped (already existed or missing required fields)</li>
+  </ul>
+</div>
+{% endif %}
+
+<div class="card" style="max-width:540px;">
+  <div class="card-body">
+    <p class="text-muted">Upload a CSV file with enrollment data. Required columns: <code>First Name</code>, <code>Last Name</code>, <code>Course</code>, <code>Email</code>, <code>Start Date</code>, <code>End Date</code>. Optional: <code>Attended</code>, <code>fee_waiver</code>, <code>Certificate ID</code>, <code>Secondary Email</code>, <code>Organization</code>, <code>City</code>, <code>Country</code>, etc.</p>
+    <p><a href="{{ url_for('upload_template') }}" class="btn btn-sm btn-outline-secondary">Download template CSV</a></p>
+    <form method="post" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">CSV File</label>
+        <input type="file" name="csvfile" class="form-control" accept=".csv">
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Batch Type</label>
+        <select name="batch_type" class="form-select">
+          <option value="public">Public</option>
+          <option value="private">Private</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Upload &amp; Import</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
