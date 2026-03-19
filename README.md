@@ -24,7 +24,7 @@ A lightweight web-based CRM (Customer Relationship Management) application for t
 1. Clone or download the repository and navigate into the project folder:
 
    ```bash
-   cd crm_app
+   cd alumni-crm-app
    ```
 
 2. Create and activate a conda environment:
