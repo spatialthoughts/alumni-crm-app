@@ -13,6 +13,17 @@ A lightweight web-based CRM (Customer Relationship Management) application for t
 - **Query & Export** — filter people with advanced criteria and export results to CSV; includes preset queries (scholarship holders with certs, discount waivers, no certificate, multi-course enrollees)
 - **World map** — enrollment counts visualised by country on the dashboard
 
+## Screenshots
+
+![Dashboard showing enrollment stats and world map](static/screenshots/dashboard.webp)
+*Dashboard with summary stats and enrollments by country map*
+
+![Person profile with enrollment history](static/screenshots/people.webp)
+*Person profile showing contact details and course enrollment history*
+
+![Query page with filters and search results](static/screenshots/query.webp)
+*Query page with preset filters, advanced search, and CSV export*
+
 ## Installation
 
 ### Prerequisites
