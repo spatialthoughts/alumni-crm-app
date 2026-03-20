@@ -13,8 +13,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CSV_DIR = os.path.dirname(BASE_DIR)  # parent dir holds the CSVs
 
 DB_PATH = os.path.join(BASE_DIR, "crm.db")
-PUBLIC_CSV = os.path.join(CSV_DIR, "public_batches.csv")
-PRIVATE_CSV = os.path.join(CSV_DIR, "private_batches.csv")
+PARTICIPANT_CSV = os.path.join(CSV_DIR, "participant_database.csv")
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -28,7 +27,8 @@ CREATE TABLE IF NOT EXISTS people (
     city TEXT,
     country TEXT,
     social_media TEXT,
-    notes TEXT
+    notes TEXT,
+    organization TEXT
 );
 
 CREATE TABLE IF NOT EXISTS people_emails (
@@ -136,17 +136,18 @@ def upsert_batch(cur, course_id, batch_type, start_date, end_date):
 
 def upsert_person(cur, row):
     """Upsert person by primary_email. Returns person_id or None."""
-    email = clean_str(row.get("Email"))
+    email = clean_str(row.get("primary_email"))
     if not email:
         return None
 
-    first_name = clean_str(row.get("First Name"))
-    last_name = clean_str(row.get("Last Name"))
-    phone = clean_str(row.get("Phone"))
-    city = clean_str(row.get("City"))
-    country = clean_str(row.get("Country"))
-    social_media = clean_str(row.get("Social Media"))
-    notes = clean_str(row.get("Notes"))
+    first_name = clean_str(row.get("first_name"))
+    last_name = clean_str(row.get("last_name"))
+    phone = clean_str(row.get("primary_phone"))
+    city = clean_str(row.get("city"))
+    country = clean_str(row.get("country"))
+    organization = clean_str(row.get("organization"))
+    social_media = clean_str(row.get("social_media"))
+    notes = clean_str(row.get("notes"))
 
     cur.execute("SELECT id FROM people WHERE primary_email = ?", (email,))
     existing = cur.fetchone()
@@ -159,17 +160,18 @@ def upsert_person(cur, row):
                primary_phone = COALESCE(?, primary_phone),
                city = COALESCE(?, city),
                country = COALESCE(?, country),
+               organization = COALESCE(?, organization),
                social_media = COALESCE(?, social_media),
                notes = COALESCE(?, notes)
                WHERE id = ?""",
-            (first_name, last_name, phone, city, country, social_media, notes, existing[0]),
+            (first_name, last_name, phone, city, country, organization, social_media, notes, existing[0]),
         )
         return existing[0]
     else:
         cur.execute(
-            """INSERT INTO people (first_name, last_name, primary_email, primary_phone, city, country, social_media, notes)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (first_name, last_name, email, phone, city, country, social_media, notes),
+            """INSERT INTO people (first_name, last_name, primary_email, primary_phone, city, country, organization, social_media, notes)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (first_name, last_name, email, phone, city, country, organization, social_media, notes),
         )
         return cur.lastrowid
 
@@ -186,8 +188,8 @@ def ensure_email(cur, person_id, email, is_primary=0):
         )
 
 
-def import_alumni(con, csv_path, batch_type):
-    print(f"\nImporting {batch_type} batches from {csv_path} ...")
+def import_alumni(con, csv_path):
+    print(f"\nImporting from {csv_path} ...")
     df = pd.read_csv(csv_path, dtype=str)
     df = df.dropna(axis=1, how="all")
 
@@ -196,14 +198,15 @@ def import_alumni(con, csv_path, batch_type):
     cur = con.cursor()
 
     for _, row in df.iterrows():
-        course_name = clean_str(row.get("Course"))
-        email = clean_str(row.get("Email"))
+        course_name = clean_str(row.get("course"))
+        email = clean_str(row.get("primary_email"))
         if not course_name or not email:
             continue
 
-        start_date = parse_date(row.get("Start Date"))
-        end_date = parse_date(row.get("End Date"))
-        attended_raw = clean_str(row.get("Attended"))
+        batch_type = clean_str(row.get("batch_type")) or "public"
+        start_date = parse_date(row.get("start_date"))
+        end_date = parse_date(row.get("end_date"))
+        attended_raw = clean_str(row.get("attended"))
         attended = 1 if attended_raw and attended_raw.strip().lower() in ("yes", "1", "true") else 0
         fee_waiver = clean_str(row.get("fee_waiver"))
 
@@ -215,14 +218,11 @@ def import_alumni(con, csv_path, batch_type):
             continue
 
         ensure_email(cur, person_id, email, is_primary=1)
-        sec_email = clean_str(row.get("Secondary Email"))
-        if sec_email:
-            ensure_email(cur, person_id, sec_email, is_primary=0)
 
-        org = clean_str(row.get("Organization"))
-        phone = clean_str(row.get("Phone"))
-        domain = clean_str(row.get("Domain"))
-        notes = clean_str(row.get("Notes"))
+        org = clean_str(row.get("organization"))
+        phone = clean_str(row.get("primary_phone"))
+        domain = clean_str(row.get("domain"))
+        notes = clean_str(row.get("notes"))
 
         cur.execute(
             """INSERT OR IGNORE INTO enrollments
@@ -232,12 +232,13 @@ def import_alumni(con, csv_path, batch_type):
         )
         enrollment_count += 1
 
-        cert_id = clean_str(row.get("Certificate ID"))
+        cert_id = clean_str(row.get("certificate_id"))
         if cert_id:
+            issue_date = parse_date(row.get("issue_date"))
             cur.execute(
-                """INSERT OR IGNORE INTO certifications (person_id, batch_id, certificate_id)
-                   VALUES (?, ?, ?)""",
-                (person_id, batch_id, cert_id),
+                """INSERT OR IGNORE INTO certifications (person_id, batch_id, certificate_id, issue_date)
+                   VALUES (?, ?, ?, ?)""",
+                (person_id, batch_id, cert_id, issue_date),
             )
             cert_count += 1
 
@@ -263,15 +264,10 @@ def main():
     con.commit()
     print(f"Created database: {DB_PATH}")
 
-    if os.path.exists(PUBLIC_CSV):
-        import_alumni(con, PUBLIC_CSV, "public")
+    if os.path.exists(PARTICIPANT_CSV):
+        import_alumni(con, PARTICIPANT_CSV)
     else:
-        print(f"\nWARNING: {PUBLIC_CSV} not found, skipping.")
-
-    if os.path.exists(PRIVATE_CSV):
-        import_alumni(con, PRIVATE_CSV, "private")
-    else:
-        print(f"\nNote: {PRIVATE_CSV} not found, skipping.")
+        print(f"\nWARNING: {PARTICIPANT_CSV} not found, skipping.")
 
     print_summary(con)
     con.close()
