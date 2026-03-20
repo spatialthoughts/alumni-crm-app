@@ -74,6 +74,22 @@ CRM_DB=/path/to/your/crm.db flask --app app run --port 5001
 
 This is useful for keeping the database outside the repository (recommended if the database contains personal data).
 
+### Try It with Test Data
+
+A `test.db` with fake data (5 obviously fake people, 2 courses, 3 batches, and sample enrollments/certificates) is included so you can explore the interface without setting up real data:
+
+```bash
+CRM_DB=test.db flask --app app run --port 5001
+```
+
+Then open **http://localhost:5001**.
+
+To regenerate `test.db` at any time:
+
+```bash
+python create_test_db.py
+```
+
 ### First Run
 
 The SQLite database is created automatically on first run. Use the **Upload** page to import data from a CSV file. A template CSV can be downloaded from that page.
