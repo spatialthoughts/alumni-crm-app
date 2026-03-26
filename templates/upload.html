@@ -12,15 +12,16 @@
   <h5>Upload complete</h5>
   <ul class="mb-0">
     <li><strong>{{ result.new_people }}</strong> new people added</li>
+    <li><strong>{{ result.existing_people }}</strong> existing people updated</li>
     <li><strong>{{ result.new_enrollments }}</strong> new enrollments added</li>
-    <li><strong>{{ result.skipped }}</strong> rows skipped (already existed or missing required fields)</li>
+    <li><strong>{{ result.skipped }}</strong> rows skipped (already enrolled or missing required fields)</li>
   </ul>
 </div>
 {% endif %}
 
 <div class="card" style="max-width:540px;">
   <div class="card-body">
-    <p class="text-muted">Upload a CSV file with enrollment data. Required columns: <code>First Name</code>, <code>Last Name</code>, <code>Course</code>, <code>Email</code>, <code>Start Date</code>, <code>End Date</code>. Optional: <code>Attended</code>, <code>fee_waiver</code>, <code>Certificate ID</code>, <code>Secondary Email</code>, <code>Organization</code>, <code>City</code>, <code>Country</code>, etc.</p>
+    <p class="text-muted">Upload a CSV file with enrollment data. Required columns: <code>first_name</code>, <code>last_name</code>, <code>primary_email</code>, <code>course</code>, <code>start_date</code>, <code>end_date</code>. Optional: <code>primary_phone</code>, <code>city</code>, <code>country</code>, <code>organization</code>, <code>social_media</code>, <code>attended</code>, <code>fee_waiver</code>, <code>domain</code>, <code>certificate_id</code>, <code>batch_type</code>, <code>secondary_email</code>, <code>notes</code>.</p>
     <p><a href="{{ url_for('upload_template') }}" class="btn btn-sm btn-outline-secondary">Download template CSV</a></p>
     <form method="post" enctype="multipart/form-data">
       <div class="mb-3">

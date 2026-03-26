@@ -353,10 +353,11 @@ def enrollment(eid):
 @app.route("/upload/template.csv")
 def upload_template():
     headers = [
-        "First Name", "Last Name", "Course", "Email", "Secondary Email",
-        "Phone", "City", "Country", "Organization", "Social Media",
-        "Notes", "Domain", "Start Date", "End Date", "Attended",
-        "Certificate ID", "fee_waiver",
+        "first_name", "last_name", "primary_email", "primary_phone",
+        "city", "country", "organization", "social_media",
+        "course", "batch_type", "start_date", "end_date",
+        "attended", "fee_waiver", "domain", "certificate_id",
+        "secondary_email", "notes",
     ]
     output = io.StringIO()
     csv.writer(output).writerow(headers)
@@ -375,19 +376,20 @@ def upload():
     if not f or not f.filename:
         return render_template("upload.html", result=None, error="No file selected.")
 
-    batch_type_upload = request.form.get("batch_type", "public")
+    batch_type_form = request.form.get("batch_type", "public")
     content = f.read().decode("utf-8-sig", errors="replace")
     reader = csv.DictReader(io.StringIO(content))
 
     database = _db.get_db()
     cur = database.cursor()
     new_people = 0
+    existing_people = 0
     new_enrollments = 0
     skipped = 0
 
     for row_dict in reader:
-        course_name = clean_str(row_dict.get("Course"))
-        email = clean_str(row_dict.get("Email"))
+        course_name = clean_str(row_dict.get("course"))
+        email = clean_str(row_dict.get("primary_email"))
         if not course_name or not email:
             skipped += 1
             continue
@@ -401,26 +403,31 @@ def upload():
             skipped += 1
             continue
 
-        if not existed:
+        if existed:
+            existing_people += 1
+        else:
             new_people += 1
 
         ensure_email(cur, person_id, email, is_primary=1)
-        sec_email = clean_str(row_dict.get("Secondary Email"))
+        sec_email = clean_str(row_dict.get("secondary_email"))
         if sec_email:
             ensure_email(cur, person_id, sec_email, is_primary=0)
 
-        start_date = parse_date(row_dict.get("Start Date"))
-        end_date = parse_date(row_dict.get("End Date"))
+        start_date = parse_date(row_dict.get("start_date"))
+        end_date = parse_date(row_dict.get("end_date"))
+        # Use batch_type from CSV if present, otherwise fall back to form value
+        batch_type_csv = clean_str(row_dict.get("batch_type"))
+        batch_type_upload = batch_type_csv if batch_type_csv else batch_type_form
         course_id = upsert_course(cur, course_name)
         batch_id = upsert_batch(cur, course_id, batch_type_upload, start_date, end_date)
 
-        attended_raw = clean_str(row_dict.get("Attended"))
+        attended_raw = clean_str(row_dict.get("attended"))
         attended = 1 if attended_raw and attended_raw.lower() in ("yes", "1", "true") else 0
         fee_waiver = clean_str(row_dict.get("fee_waiver"))
-        org = clean_str(row_dict.get("Organization"))
-        phone = clean_str(row_dict.get("Phone"))
-        domain = clean_str(row_dict.get("Domain"))
-        notes = clean_str(row_dict.get("Notes"))
+        org = clean_str(row_dict.get("organization"))
+        phone = clean_str(row_dict.get("primary_phone"))
+        domain = clean_str(row_dict.get("domain"))
+        notes = clean_str(row_dict.get("notes"))
 
         cur.execute(
             """INSERT OR IGNORE INTO enrollments
@@ -433,8 +440,8 @@ def upload():
         else:
             skipped += 1
 
-        cert_id_val = clean_str(row_dict.get("Certificate ID"))
-        if cert_id_val:
+        cert_id_val = clean_str(row_dict.get("certificate_id"))
+        if cert_id_val and cert_id_val != "-":
             cur.execute(
                 """INSERT OR IGNORE INTO certifications (person_id, batch_id, certificate_id)
                    VALUES (?,?,?)""",
@@ -444,7 +451,12 @@ def upload():
     database.commit()
     return render_template(
         "upload.html",
-        result={"new_people": new_people, "new_enrollments": new_enrollments, "skipped": skipped},
+        result={
+            "new_people": new_people,
+            "existing_people": existing_people,
+            "new_enrollments": new_enrollments,
+            "skipped": skipped,
+        },
         error=None,
     )
 
