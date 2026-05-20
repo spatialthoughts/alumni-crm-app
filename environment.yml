@@ -1,0 +1,8 @@
+name: crm
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - flask
+  - pandas
+  - openpyxl
