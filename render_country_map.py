@@ -45,9 +45,6 @@ FRAME_COLOR = "darkgray"
 FRAME_WIDTH = 0.8
 FRAME_ALPHA = 0.5
 
-# Countries to force white regardless of CRM data (normalised NAME_EN).
-EXCLUDE = {"pakistan"}
-
 # Feature properties tried (in order) when matching a CRM country string.
 NAME_PROPS = (
     "NAME_EN",
@@ -180,14 +177,7 @@ def main():
     index = build_feature_index(features)
     highlighted, unmatched = match_countries(crm_countries, index)
 
-    excluded = {index[name] for name in EXCLUDE if name in index}
-    dropped = highlighted & excluded
-    highlighted -= excluded
-
     print(f"Highlighted:    {len(highlighted)} countries")
-    if dropped:
-        names = sorted(features[i]["properties"].get("NAME_EN", "?") for i in dropped)
-        print(f"EXCLUDED:       {', '.join(names)}")
     if unmatched:
         print(f"UNMATCHED:      {', '.join(unmatched)}")
 
