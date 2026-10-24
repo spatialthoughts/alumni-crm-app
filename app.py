@@ -101,7 +101,8 @@ def person(pid):
         # Rebuild secondary emails: delete existing, re-insert submitted non-empty values
         database.execute("DELETE FROM people_emails WHERE person_id=? AND is_primary=0", (pid,))
         seen = set()
-        primary = database.execute("SELECT primary_email FROM people WHERE id=?", (pid,)).fetchone()["primary_email"]
+        # A person from a class the website listed without emails has none.
+        primary = database.execute("SELECT primary_email FROM people WHERE id=?", (pid,)).fetchone()["primary_email"] or ""
         for email in request.form.getlist("sec_email"):
             email = email.strip().lower()
             if email and email != primary.lower() and email not in seen:
@@ -149,16 +150,39 @@ def merge_confirm():
     database = _db.get_db()
     cur = database.cursor()
 
-    # Move enrollments and certifications
-    cur.execute("UPDATE enrollments SET person_id=? WHERE person_id=?", (keep_id, drop_id))
-    cur.execute("UPDATE certifications SET person_id=? WHERE person_id=?", (keep_id, drop_id))
+    # Two certificates for one batch are a real conflict, not a duplicate: refuse.
+    clash = database.execute(
+        """SELECT d.batch_id FROM certifications d JOIN certifications k
+           ON k.batch_id = d.batch_id AND k.person_id = ?
+           WHERE d.person_id = ? AND d.certificate_id IS NOT NULL AND k.certificate_id IS NOT NULL
+             AND d.certificate_id != k.certificate_id""", (keep_id, drop_id)).fetchone()
+    if clash:
+        return f"Both records have a different certificate for batch {clash['batch_id']}; fix one first.", 400
+
+    # Both in the same batch (UNIQUE(person_id, batch_id)): fill keep's row from drop's, drop drop's.
+    for table, cols in (("enrollments", ("fee_waiver", "organization", "phone", "domain", "notes")),
+                        ("certifications", ("certificate_id", "certificate_url", "issue_date"))):
+        same = f"(SELECT {{0}} FROM {table} d WHERE d.person_id=? AND d.batch_id={table}.batch_id)"
+        fill = [f"{c} = COALESCE({c}, {same.format(c)})" for c in cols]
+        if table == "enrollments":
+            fill.append(f"attended = MAX(attended, COALESCE({same.format('attended')}, 0))")
+        cur.execute(f"""UPDATE {table} SET {", ".join(fill)} WHERE person_id=?
+                        AND batch_id IN (SELECT batch_id FROM {table} WHERE person_id=?)""",
+                    (*[drop_id] * len(fill), keep_id, drop_id))
+        cur.execute(f"""DELETE FROM {table} WHERE person_id=?
+                        AND batch_id IN (SELECT batch_id FROM {table} WHERE person_id=?)""", (drop_id, keep_id))
+        # The rest move across
+        cur.execute(f"UPDATE {table} SET person_id=? WHERE person_id=?", (keep_id, drop_id))
 
     # Absorb emails from drop into keep
-    keep_primary = database.execute("SELECT primary_email FROM people WHERE id=?", (keep_id,)).fetchone()["primary_email"]
+    # Either may have no email: a person from a class the website listed without them.
+    keep_primary = database.execute("SELECT primary_email FROM people WHERE id=?", (keep_id,)).fetchone()["primary_email"] or ""
     drop_primary = database.execute("SELECT primary_email FROM people WHERE id=?", (drop_id,)).fetchone()["primary_email"]
+    # Keep has none: drop's primary becomes keep's, once drop is deleted below.
+    promote = drop_primary if not keep_primary else None
 
     # Collect all emails belonging to drop (primary + any secondaries)
-    drop_emails = [drop_primary] + [
+    drop_emails = ([drop_primary] if drop_primary and not promote else []) + [
         r["email"] for r in database.execute(
             "SELECT email FROM people_emails WHERE person_id=?", (drop_id,)
         ).fetchall()
@@ -190,6 +214,10 @@ def merge_confirm():
     )
 
     cur.execute("DELETE FROM people WHERE id=?", (drop_id,))
+    if promote:
+        cur.execute("UPDATE people SET primary_email=? WHERE id=?", (promote, keep_id))
+        cur.execute("INSERT OR IGNORE INTO people_emails (person_id, email, is_primary) VALUES (?,?,1)",
+                    (keep_id, promote))
     database.commit()
 
     return redirect(url_for("person", pid=keep_id))
