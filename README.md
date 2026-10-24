@@ -7,9 +7,9 @@ A lightweight web-based CRM (Customer Relationship Management) application for t
 - **Dashboard** — at-a-glance stats: total people, courses, batches, enrollments, scholarships, and certificates
 - **People** — browse, search, and filter participants by name, email, country, course, fee waiver status, or certification
 - **Person profiles** — view and edit contact details, secondary emails, and enrollment history; merge duplicate records
-- **Courses & Batches** — view courses with enrollment counts; drill into individual batches and their rosters
+- **Courses & Batches** — view courses with enrollment counts; drill into individual batches and their rosters. A course's id is the spatialthoughts.com `course_id` (`advanced_qgis`) and a batch's id is its cohort id (`advanced_qgis_20260916`), so the CRM and the website name a class the same way
 - **Enrollments** — record attendance, fee waivers, and certificate IDs per enrollment
-- **CSV Import** — upload a CSV file to bulk-import people and enrollments (download a template from the upload page)
+- **CSV Import** — upload a CSV file to bulk-import people and enrollments (download a template from the upload page). Each row names its batch by id; a new batch also needs its course id and dates
 - **Query & Export** — filter people with advanced criteria and export results to CSV; includes preset queries (scholarship holders with certs, discount waivers, no certificate, multi-course enrollees)
 - **World map** — enrollment counts visualised by country on the dashboard
 

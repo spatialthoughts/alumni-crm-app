@@ -64,7 +64,7 @@ def search_people(
 
     if course:
         conditions.append("c.id = ?")
-        params.append(int(course))
+        params.append(course)
 
     if waiver and waiver != "any":
         if waiver == "none":

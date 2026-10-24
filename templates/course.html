@@ -38,6 +38,7 @@
 <table class="table table-hover table-sm">
   <thead class="table-secondary">
     <tr>
+      <th>Batch</th>
       <th>Type</th>
       <th>Start Date</th>
       <th>End Date</th>
@@ -47,6 +48,7 @@
   <tbody>
     {% for b in batches %}
     <tr>
+      <td><a href="{{ url_for('batch', bid=b.id) }}"><code>{{ b.id }}</code></a></td>
       <td>
         <a href="{{ url_for('batch', bid=b.id) }}">
           <span class="badge bg-{{ 'info' if b.batch_type == 'public' else 'secondary' }}">{{ b.batch_type }}</span>
@@ -57,7 +59,7 @@
       <td class="text-center"><a href="{{ url_for('batch', bid=b.id) }}">{{ b.enrollment_count }}</a></td>
     </tr>
     {% else %}
-    <tr><td colspan="4" class="text-muted text-center">No batches.</td></tr>
+    <tr><td colspan="5" class="text-muted text-center">No batches.</td></tr>
     {% endfor %}
   </tbody>
 </table>

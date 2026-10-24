@@ -7,6 +7,7 @@ Certificate IDs and fee_waiver data come directly from the enrollment CSVs.
 
 import sqlite3
 import os
+import sys
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -115,23 +116,22 @@ def clean_str(val):
     return s if s else None
 
 
-def upsert_course(cur, name):
-    cur.execute("INSERT OR IGNORE INTO courses (name) VALUES (?)", (name,))
-    cur.execute("SELECT id FROM courses WHERE name = ?", (name,))
-    return cur.fetchone()[0]
+# Course and batch ids are the website's: a course's is its course_id
+# ("advanced_qgis"), a batch's is its cohort id ("advanced_qgis_20260916"). They
+# are never made up from a name or dates -- that is how duplicate batches came about.
+
+def upsert_course(cur, course_id, name):
+    cur.execute("INSERT OR IGNORE INTO courses (id, name) VALUES (?, ?)", (course_id, name))
+    return course_id
 
 
-def upsert_batch(cur, course_id, batch_type, start_date, end_date):
+def upsert_batch(cur, batch_id, course_id, batch_type, start_date, end_date):
     cur.execute(
-        """INSERT OR IGNORE INTO batches (course_id, batch_type, start_date, end_date)
-           VALUES (?, ?, ?, ?)""",
-        (course_id, batch_type, start_date, end_date),
+        """INSERT OR IGNORE INTO batches (id, course_id, batch_type, start_date, end_date)
+           VALUES (?, ?, ?, ?, ?)""",
+        (batch_id, course_id, batch_type, start_date, end_date),
     )
-    cur.execute(
-        "SELECT id FROM batches WHERE course_id=? AND batch_type=? AND start_date IS ? AND end_date IS ?",
-        (course_id, batch_type, start_date, end_date),
-    )
-    return cur.fetchone()[0]
+    return batch_id
 
 
 def upsert_person(cur, row):
@@ -255,6 +255,10 @@ def print_summary(con):
 
 
 def main():
+    # Kept as the record of the first import. Since 2026-10-24 courses and batches
+    # have text ids (the website's), which participant_database.csv does not have, and
+    # crm.db has been edited since: rebuilding it from the CSV would lose all of that.
+    sys.exit("import_crm.py built the first crm.db and must not be run again.")
     if os.path.exists(DB_PATH):
         os.remove(DB_PATH)
         print(f"Removed existing {DB_PATH}")

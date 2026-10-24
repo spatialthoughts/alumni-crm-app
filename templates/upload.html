@@ -17,11 +17,19 @@
     <li><strong>{{ result.skipped }}</strong> rows skipped (already enrolled or missing required fields)</li>
   </ul>
 </div>
+{% if result.problems %}
+<div class="alert alert-warning">
+  <h6>Rows not imported</h6>
+  <ul class="mb-0">
+    {% for p in result.problems %}<li>{{ p }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
 {% endif %}
 
 <div class="card" style="max-width:540px;">
   <div class="card-body">
-    <p class="text-muted">Upload a CSV file with enrollment data. Required columns: <code>first_name</code>, <code>last_name</code>, <code>primary_email</code>, <code>course</code>, <code>start_date</code>, <code>end_date</code>. Optional: <code>primary_phone</code>, <code>city</code>, <code>country</code>, <code>organization</code>, <code>social_media</code>, <code>attended</code>, <code>fee_waiver</code>, <code>domain</code>, <code>certificate_id</code>, <code>batch_type</code>, <code>secondary_email</code>, <code>notes</code>.</p>
+    <p class="text-muted">Upload a CSV file with enrollment data. Required columns: <code>batch</code> (the batch id, which is the website's cohort id, e.g. <code>advanced_qgis_20260916</code>), <code>first_name</code>, <code>last_name</code>, <code>primary_email</code>. For a batch that is not in the CRM yet, also <code>course</code> (the course id, e.g. <code>advanced_qgis</code>), <code>start_date</code> and <code>end_date</code>, plus <code>course_name</code> if the course is new too. Optional: <code>primary_phone</code>, <code>city</code>, <code>country</code>, <code>organization</code>, <code>social_media</code>, <code>attended</code>, <code>fee_waiver</code>, <code>domain</code>, <code>certificate_id</code>, <code>batch_type</code>, <code>secondary_email</code>, <code>notes</code>.</p>
     <p><a href="{{ url_for('upload_template') }}" class="btn btn-sm btn-outline-secondary">Download template CSV</a></p>
     <form method="post" enctype="multipart/form-data">
       <div class="mb-3">

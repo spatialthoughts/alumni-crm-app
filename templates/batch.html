@@ -12,6 +12,7 @@
 <div class="d-flex justify-content-between align-items-start mb-3">
   <div>
     <h2>{{ batch.course_name }}</h2>
+    <p class="mb-1"><code>{{ batch.id }}</code></p>
     <p class="text-muted mb-0">
       <span class="badge bg-{{ 'info' if batch.batch_type == 'public' else 'secondary' }}">{{ batch.batch_type }}</span>
       {{ batch.start_date or '?' }} → {{ batch.end_date or '?' }}

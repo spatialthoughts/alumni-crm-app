@@ -215,7 +215,7 @@ def courses():
     return render_template("courses.html", courses=rows)
 
 
-@app.route("/courses/<int:cid>", methods=["GET", "POST"])
+@app.route("/courses/<cid>", methods=["GET", "POST"])
 def course(cid):
     database = _db.get_db()
     if request.method == "POST":
@@ -246,7 +246,7 @@ def course(cid):
 
 # ── Batches ───────────────────────────────────────────────────────────────────
 
-@app.route("/batches/<int:bid>", methods=["GET", "POST"])
+@app.route("/batches/<bid>", methods=["GET", "POST"])
 def batch(bid):
     database = _db.get_db()
     if request.method == "POST":
@@ -353,9 +353,9 @@ def enrollment(eid):
 @app.route("/upload/template.csv")
 def upload_template():
     headers = [
-        "first_name", "last_name", "primary_email", "primary_phone",
+        "batch", "first_name", "last_name", "primary_email", "primary_phone",
         "city", "country", "organization", "social_media",
-        "course", "batch_type", "start_date", "end_date",
+        "course", "course_name", "batch_type", "start_date", "end_date",
         "attended", "fee_waiver", "domain", "certificate_id",
         "secondary_email", "notes",
     ]
@@ -386,13 +386,31 @@ def upload():
     existing_people = 0
     new_enrollments = 0
     skipped = 0
+    problems = []
 
-    for row_dict in reader:
-        course_name = clean_str(row_dict.get("course"))
+    # A row names its batch by id: the website's cohort id. A batch not in the CRM yet is
+    # created from the row's course id and dates; it is never matched by name or dates.
+    for line, row_dict in enumerate(reader, start=2):
+        batch_id = clean_str(row_dict.get("batch"))
         email = clean_str(row_dict.get("primary_email"))
-        if not course_name or not email:
+        if not batch_id or not email:
             skipped += 1
+            problems.append(f"line {line}: no batch or no primary_email")
             continue
+        known_batch = database.execute("SELECT id FROM batches WHERE id=?", (batch_id,)).fetchone()
+        course_id = clean_str(row_dict.get("course"))
+        if not known_batch:
+            known_course = course_id and database.execute(
+                "SELECT id FROM courses WHERE id=?", (course_id,)).fetchone()
+            if not course_id or (not known_course and not clean_str(row_dict.get("course_name"))):
+                skipped += 1
+                problems.append(f"line {line}: batch {batch_id} is new, and its course "
+                                f"{course_id or '(none)'} is not in the CRM: give its course_name to add it")
+                continue
+            if not (parse_date(row_dict.get("start_date")) and parse_date(row_dict.get("end_date"))):
+                skipped += 1
+                problems.append(f"line {line}: batch {batch_id} is new and needs start_date and end_date")
+                continue
 
         existed = database.execute(
             "SELECT id FROM people WHERE primary_email=?", (email,)
@@ -413,13 +431,13 @@ def upload():
         if sec_email:
             ensure_email(cur, person_id, sec_email, is_primary=0)
 
-        start_date = parse_date(row_dict.get("start_date"))
-        end_date = parse_date(row_dict.get("end_date"))
-        # Use batch_type from CSV if present, otherwise fall back to form value
-        batch_type_csv = clean_str(row_dict.get("batch_type"))
-        batch_type_upload = batch_type_csv if batch_type_csv else batch_type_form
-        course_id = upsert_course(cur, course_name)
-        batch_id = upsert_batch(cur, course_id, batch_type_upload, start_date, end_date)
+        if not known_batch:
+            # Use batch_type from CSV if present, otherwise fall back to form value
+            batch_type_csv = clean_str(row_dict.get("batch_type"))
+            batch_type_upload = batch_type_csv if batch_type_csv else batch_type_form
+            upsert_course(cur, course_id, clean_str(row_dict.get("course_name")))
+            upsert_batch(cur, batch_id, course_id, batch_type_upload,
+                         parse_date(row_dict.get("start_date")), parse_date(row_dict.get("end_date")))
 
         attended_raw = clean_str(row_dict.get("attended"))
         attended = 1 if attended_raw and attended_raw.lower() in ("yes", "1", "true") else 0
@@ -456,6 +474,7 @@ def upload():
             "existing_people": existing_people,
             "new_enrollments": new_enrollments,
             "skipped": skipped,
+            "problems": problems,
         },
         error=None,
     )

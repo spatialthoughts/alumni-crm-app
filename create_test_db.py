@@ -26,25 +26,24 @@ CREATE TABLE IF NOT EXISTS people_emails (
 );
 
 CREATE TABLE IF NOT EXISTS courses (
-    id INTEGER PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
     description TEXT
 );
 
 CREATE TABLE IF NOT EXISTS batches (
-    id INTEGER PRIMARY KEY,
-    course_id INTEGER NOT NULL REFERENCES courses(id),
+    id TEXT PRIMARY KEY,
+    course_id TEXT NOT NULL REFERENCES courses(id),
     batch_type TEXT NOT NULL,
     start_date TEXT,
     end_date TEXT,
-    notes TEXT,
-    UNIQUE(course_id, batch_type, start_date, end_date)
+    notes TEXT
 );
 
 CREATE TABLE IF NOT EXISTS enrollments (
     id INTEGER PRIMARY KEY,
     person_id INTEGER NOT NULL REFERENCES people(id),
-    batch_id INTEGER NOT NULL REFERENCES batches(id),
+    batch_id TEXT NOT NULL REFERENCES batches(id),
     attended INTEGER NOT NULL DEFAULT 0,
     fee_waiver TEXT,
     organization TEXT,
@@ -57,7 +56,7 @@ CREATE TABLE IF NOT EXISTS enrollments (
 CREATE TABLE IF NOT EXISTS certifications (
     id INTEGER PRIMARY KEY,
     person_id INTEGER NOT NULL REFERENCES people(id),
-    batch_id INTEGER NOT NULL REFERENCES batches(id),
+    batch_id TEXT NOT NULL REFERENCES batches(id),
     certificate_id TEXT,
     certificate_url TEXT,
     issue_date TEXT,
@@ -82,35 +81,38 @@ people_emails = [
     (6, 5, "bob.example@test.invalid", 1),
 ]
 
+# Course and batch ids are text, as the website's are: a course_id and a cohort id.
 courses = [
-    (1, "GIS for Beginners",    "Introduction to Geographic Information Systems"),
-    (2, "Spatial Data Analysis","Advanced spatial data analysis techniques"),
+    ("gis_beginners",  "GIS for Beginners",    "Introduction to Geographic Information Systems"),
+    ("spatial_analysis","Spatial Data Analysis","Advanced spatial data analysis techniques"),
 ]
 
 batches = [
-    (1, 1, "Online",   "2024-01-15", "2024-02-15", "Test batch 1"),
-    (2, 1, "In-person","2024-06-01", "2024-06-30", "Test batch 2"),
-    (3, 2, "Online",   "2024-03-01", "2024-04-01", "Test batch 3"),
+    ("gis_beginners_20240115",    "gis_beginners",   "public",  "2024-01-15", "2024-02-15", "Test batch 1"),
+    ("gis_beginners_20240601",    "gis_beginners",   "private", "2024-06-01", "2024-06-30", "Test batch 2"),
+    ("spatial_analysis_20240301", "spatial_analysis","public",  "2024-03-01", "2024-04-01", "Test batch 3"),
 ]
+
+B1, B2, B3 = (b[0] for b in batches)
 
 enrollments = [
     # (id, person_id, batch_id, attended, fee_waiver, organization, phone, domain, notes)
-    (1, 1, 1, 1, None,        "Example Corp",       "+1-555-0001", "Technology",  None),
-    (2, 2, 1, 1, None,        "Fakery Inc",         "+1-555-0002", "Education",   None),
-    (3, 3, 1, 0, None,        "Demo Org",           "+1-555-0003", "NGO",         "Did not attend"),
-    (4, 4, 2, 1, "Scholarship","Sample University", "+1-555-0004", "Academia",    "Fee waiver granted"),
-    (5, 5, 2, 1, None,        "Test Institute",     "+1-555-0005", "Research",    None),
-    (6, 1, 3, 1, None,        "Example Corp",       "+1-555-0001", "Technology",  None),
-    (7, 4, 3, 1, "Discount",  "Sample University",  "+1-555-0004", "Academia",    None),
+    (1, 1, B1, 1, None,        "Example Corp",       "+1-555-0001", "Technology",  None),
+    (2, 2, B1, 1, None,        "Fakery Inc",         "+1-555-0002", "Education",   None),
+    (3, 3, B1, 0, None,        "Demo Org",           "+1-555-0003", "NGO",         "Did not attend"),
+    (4, 4, B2, 1, "scholarship","Sample University", "+1-555-0004", "Academia",    "Fee waiver granted"),
+    (5, 5, B2, 1, None,        "Test Institute",     "+1-555-0005", "Research",    None),
+    (6, 1, B3, 1, None,        "Example Corp",       "+1-555-0001", "Technology",  None),
+    (7, 4, B3, 1, "discount",  "Sample University",  "+1-555-0004", "Academia",    None),
 ]
 
 certifications = [
     # (id, person_id, batch_id, certificate_id, certificate_url, issue_date)
-    (1, 1, 1, "TEST-001", "https://cert.example.com/TEST-001", "2024-02-20"),
-    (2, 2, 1, "TEST-002", "https://cert.example.com/TEST-002", "2024-02-20"),
-    (3, 4, 2, "TEST-003", "https://cert.example.com/TEST-003", "2024-07-10"),
-    (4, 5, 2, "TEST-004", "https://cert.example.com/TEST-004", "2024-07-10"),
-    (5, 1, 3, "TEST-005", "https://cert.example.com/TEST-005", "2024-04-10"),
+    (1, 1, B1, "TEST-001", "https://cert.example.com/TEST-001", "2024-02-20"),
+    (2, 2, B1, "TEST-002", "https://cert.example.com/TEST-002", "2024-02-20"),
+    (3, 4, B2, "TEST-003", "https://cert.example.com/TEST-003", "2024-07-10"),
+    (4, 5, B2, "TEST-004", "https://cert.example.com/TEST-004", "2024-07-10"),
+    (5, 1, B3, "TEST-005", "https://cert.example.com/TEST-005", "2024-04-10"),
 ]
 
 if os.path.exists(DB_PATH):
